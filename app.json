@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Luna - Tu ciclo en tu bolsillo",
+    "slug": "luna-tracker",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "description": "Tu ciclo en tu bolsillo. Gratis, sin cuentas, tus datos no salen del movil.",
+    "plugins": [
+      "expo-notifications"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gianna.luna"
+    },
+    "android": {
+      "package": "com.gianna.luna",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F1E7",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c99cd9da-84fb-4f6d-8c07-831490432bca"
+      }
+    }
+  }
+}
