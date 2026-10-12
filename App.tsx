@@ -346,6 +346,9 @@ export default function App() {
   // Temporizadores de cambio (tampón/copa/disco): producto → aviso y hora.
   // Se guardan para sobrevivir a cerrar la app; al abrir, tiro los pasados.
   const [cambios, setCambios] = useState<Record<string, { id: string; fecha: number }>>({});
+  // Al marcar un producto con horas pregunto cuándo se puso: la cuenta
+  // sale de ahí, no de ahora. null = no hay pregunta abierta.
+  const [puesta, setPuesta] = useState<{ id: string; hora: number; minuto: number } | null>(null);
   // día o noche: la pinta de la app. Se guarda como todo lo demás.
   const [tema, setTema] = useState<Tema>('dia');
   const paleta = TEMAS[tema];
@@ -451,14 +454,15 @@ export default function App() {
     })();
   }, [cargado, avisoPuesto, cuenta.proxima, pastilla, largo]);
 
-  // El temporizador de cambio: al apuntar tampón/copa/disco se programa
-  // solo; al quitarlo se cancela. Cada producto lleva el suyo.
+  // El temporizador de cambio: cuenta desde que se puso, no desde ahora.
+  // Si ya pasó de lo bueno, el aviso suena ya: mejor un toque ahora
+  // que una cuenta que miente.
   const guardarCambios = async (siguiente: Record<string, { id: string; fecha: number }>) => {
     setCambios(siguiente);
     await AsyncStorage.setItem(CLAVE_CAMBIOS, JSON.stringify(siguiente));
   };
 
-  const programarCambio = async (producto: InfoProducto) => {
+  const programarCambioDesde = async (producto: InfoProducto, base: Date) => {
     if (Platform.OS === 'web' || !producto.maxHoras) return;
     try {
       if (!(await permisoAvisos())) return;
@@ -466,17 +470,42 @@ export default function App() {
       if (anterior) {
         await olvidarAviso(anterior.id);
       }
-      const fecha = new Date(Date.now() + producto.maxHoras * 3600000);
+      const fuego = new Date(Math.max(base.getTime() + producto.maxHoras * 3600000, Date.now() + 60000));
       const id = await programarFecha(
         'Luna',
         `${producto.nombre}: toca cambiar. Gracias por cuidarte.`,
-        fecha,
+        fuego,
       );
       if (!id) return;
-      guardarCambios({ ...cambios, [producto.id]: { id, fecha: fecha.getTime() } });
+      guardarCambios({ ...cambios, [producto.id]: { id, fecha: fuego.getTime() } });
     } catch {
       // si falla, el consejo de arriba sigue valiendo.
     }
+  };
+
+  // Abre la pregunta de la hora con el ahora ya puesto: lo normal
+  // es acabar de ponérselo, y así es un toque y listo.
+  const abrirPuesta = (producto: InfoProducto, base?: Date) => {
+    const ahora = base ?? new Date();
+    const cuartos = [0, 15, 30, 45];
+    const minuto = [...cuartos].reverse().find((c) => c <= ahora.getMinutes()) ?? 0;
+    setPuesta({ id: producto.id, hora: ahora.getHours(), minuto });
+  };
+
+  // Cierra la pregunta programando con la hora elegida. Si marca una hora
+  // de después, entiendo que es ahora: nadie se lo pone en el futuro.
+  const confirmarPuesta = () => {
+    if (!puesta) return;
+    const info = PRODUCTOS.find((p) => p.id === puesta.id);
+    if (!info) {
+      setPuesta(null);
+      return;
+    }
+    const base = new Date();
+    base.setHours(puesta.hora, puesta.minuto, 0, 0);
+    if (base.getTime() > Date.now()) base.setTime(Date.now());
+    setPuesta(null);
+    programarCambioDesde(info, base);
   };
 
   const quitarCambio = async (productoId: string) => {
@@ -539,11 +568,24 @@ export default function App() {
     if (lleva.includes(id)) {
       retocarHoy({ productos: lleva.filter((x) => x !== id) });
       quitarCambio(id);
+      if (puesta?.id === id) setPuesta(null);
     } else {
       retocarHoy({ productos: [...lleva, id] });
       const info = PRODUCTOS.find((p) => p.id === id);
-      if (info && info.maxHoras !== null) programarCambio(info);
+      // con horas pregunto cuándo se puso (en el móvil); sin horas
+      // o en web, basta con marcarlo.
+      if (info && info.maxHoras !== null && Platform.OS !== 'web') abrirPuesta(info);
     }
+  };
+
+  // «Lo acabo de cambiar»: cuenta nueva desde ahora mismo.
+  const renovarCambio = (producto: InfoProducto) => programarCambioDesde(producto, new Date());
+
+  // «Cambiar hora»: reabre la pregunta con la puesta que hay guardada.
+  const corregirPuesta = (producto: InfoProducto) => {
+    const t = cambios[producto.id];
+    const base = t && producto.maxHoras ? new Date(t.fecha - producto.maxHoras * 3600000) : new Date();
+    abrirPuesta(producto, base);
   };
 
   const borrarTodo = () => {
@@ -773,7 +815,13 @@ export default function App() {
             onMarcarManchado={marcarManchadoHoy}
             cambios={cambios}
             onQuitarCambio={quitarCambio}
-            onReintentarCambio={programarCambio}
+            onReintentarCambio={abrirPuesta}
+            puesta={puesta}
+            onPuestaElegir={(hora, minuto) => setPuesta((p) => (p ? { ...p, hora, minuto } : p))}
+            onPuestaOk={confirmarPuesta}
+            onPuestaNo={() => setPuesta(null)}
+            onRenovarCambio={renovarCambio}
+            onCorregirPuesta={corregirPuesta}
             onAbrirArticulo={abrirArticulo}
             onSintoma={tocarSintoma}
             onTocarProducto={tocarProducto}
@@ -847,7 +895,7 @@ export default function App() {
 
 /* ---------- hoy: entrar, apuntar y salir. menos de 10 segundos. ---------- */
 
-function PantallaHoy({ hoy, cuenta, diaDelCiclo, ultimas, fase, tocaCompra, pastillaHora, avisoLargo, marcaHoy, notaCuenta, nota, productosHoy, cambios, onMarcarHoy, onMarcarManchado, onQuitarCambio, onReintentarCambio, onAbrirArticulo, onSintoma, onTocarProducto, onRetocar }: {
+function PantallaHoy({ hoy, cuenta, diaDelCiclo, ultimas, fase, tocaCompra, pastillaHora, avisoLargo, marcaHoy, notaCuenta, nota, productosHoy, cambios, onMarcarHoy, onMarcarManchado, onQuitarCambio, onReintentarCambio, puesta, onPuestaElegir, onPuestaOk, onPuestaNo, onRenovarCambio, onCorregirPuesta, onAbrirArticulo, onSintoma, onTocarProducto, onRetocar }: {
   hoy: string;
   cuenta: Estimacion;
   diaDelCiclo: number | null;
@@ -865,12 +913,32 @@ function PantallaHoy({ hoy, cuenta, diaDelCiclo, ultimas, fase, tocaCompra, past
   onMarcarManchado: () => void;
   onQuitarCambio: (id: string) => void;
   onReintentarCambio: (p: InfoProducto) => void;
+  puesta: { id: string; hora: number; minuto: number } | null;
+  onPuestaElegir: (hora: number, minuto: number) => void;
+  onPuestaOk: () => void;
+  onPuestaNo: () => void;
+  onRenovarCambio: (p: InfoProducto) => void;
+  onCorregirPuesta: (p: InfoProducto) => void;
   onAbrirArticulo: (id: string) => void;
   onSintoma: (s: string) => void;
   onTocarProducto: (id: string) => void;
   onRetocar: (c: Partial<NotaDelDia>) => void;
 }) {
   const { styles, paleta } = useEstilos();
+  // la pregunta abierta y su vista previa: con la hora elegida, ¿a qué
+  // hora sonaría? Si ya pasó de lo bueno, lo digo claro.
+  const puestaInfo = puesta ? (PRODUCTOS.find((p) => p.id === puesta.id) ?? null) : null;
+  const horaCorta = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const textoFuegoPuesta = (() => {
+    if (!puesta || !puestaInfo || puestaInfo.maxHoras === null) return '';
+    const base = new Date();
+    base.setHours(puesta.hora, puesta.minuto, 0, 0);
+    const real = base.getTime() > Date.now() ? new Date() : base;
+    const fuego = new Date(real.getTime() + puestaInfo.maxHoras * 3600000);
+    return fuego.getTime() - Date.now() <= 5 * 60000
+      ? 'Ya pasa de lo bueno: sonará ahora mismo para que lo cambies cuanto puedas.'
+      : `Te aviso a las ${horaCorta(fuego)} (${puestaInfo.maxHoras} h desde las ${horaCorta(real)}).`;
+  })();
   return (
     <ScrollView contentContainerStyle={styles.pagina} showsVerticalScrollIndicator={false}>
       <Text style={styles.kicker}>Hoy · {formatoDiaSemana(hoy)}</Text>
@@ -927,35 +995,6 @@ function PantallaHoy({ hoy, cuenta, diaDelCiclo, ultimas, fase, tocaCompra, past
         </Pressable>
       )}
 
-      {productosHoy.map((p) => {
-        const t = cambios[p.id];
-        const hora = t ? new Date(t.fecha) : null;
-        const horaTxt = hora ? `${hora.getHours()}:${String(hora.getMinutes()).padStart(2, '0')}` : '';
-        return (
-          <View key={p.id} style={styles.compra}>
-            <Text style={styles.compraTitulo}>{p.nombre}: {p.consejo}</Text>
-            <View style={styles.productoFila}>
-              {p.maxHoras !== null && Platform.OS !== 'web' && t && (
-                <Pressable onPress={() => onQuitarCambio(p.id)}>
-                  <Text style={styles.enlace}>Te aviso a las {horaTxt} · quítalo</Text>
-                </Pressable>
-              )}
-              {p.maxHoras !== null && Platform.OS !== 'web' && !t && (
-                <Pressable onPress={() => onReintentarCambio(p)}>
-                  <Text style={styles.enlace}>Avísame en {p.maxHoras} h →</Text>
-                </Pressable>
-              )}
-              {p.maxHoras !== null && Platform.OS === 'web' && (
-                <Text style={styles.compraTexto}>En el móvil esto avisa solo</Text>
-              )}
-              <Pressable onPress={() => onAbrirArticulo(p.articulo)}>
-                <Text style={styles.enlace}>Leer más →</Text>
-              </Pressable>
-            </View>
-          </View>
-        );
-      })}
-
       <Text style={styles.etiqueta}><Text style={styles.etiquetaNum}>01 / </Text>Cómo te baja</Text>
       <Palabras
         opciones={FLUJOS}
@@ -996,6 +1035,81 @@ function PantallaHoy({ hoy, cuenta, diaDelCiclo, ultimas, fase, tocaCompra, past
           if (hallado) onTocarProducto(hallado.id);
         }}
       />
+
+      {puesta && puestaInfo && puestaInfo.maxHoras !== null && (
+        <View style={styles.compra}>
+          <Text style={styles.compraTitulo}>{puestaInfo.nombre}: ¿a qué hora?</Text>
+          <Text style={styles.compraTexto}>Cuenta desde que te lo pusiste, no desde ahora.</Text>
+          <Text style={styles.faseSub}>Hora</Text>
+          <Palabras
+            opciones={HORAS}
+            elegidas={[String(puesta.hora)]}
+            onTocar={(h) => onPuestaElegir(Number(h), puesta.minuto)}
+          />
+          <Text style={styles.faseSub}>Minutos</Text>
+          <Palabras
+            opciones={MINUTOS}
+            elegidas={[String(puesta.minuto).padStart(2, '0')]}
+            onTocar={(m) => onPuestaElegir(puesta.hora, Number(m))}
+          />
+          <Text style={styles.aclaracion}>{textoFuegoPuesta}</Text>
+          <View style={styles.productoFila}>
+            <Pressable onPress={onPuestaOk} style={({ pressed }) => [styles.botonGrande, pressed && styles.apretado]}>
+              <Text style={styles.botonTexto}>Vale, avísame →</Text>
+            </Pressable>
+            <Pressable onPress={onPuestaNo}>
+              <Text style={styles.enlace}>Ahora no</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {productosHoy.filter((p) => p.maxHoras !== null && Platform.OS !== 'web').map((p) => {
+        const t = cambios[p.id];
+        if (!t) {
+          return (
+            <View key={p.id} style={styles.compra}>
+              <Text style={styles.compraTitulo}>{p.nombre}: {p.consejo}</Text>
+              <View style={styles.productoFila}>
+                <Pressable onPress={() => onReintentarCambio(p)}>
+                  <Text style={styles.enlace}>Avísame en {p.maxHoras} h →</Text>
+                </Pressable>
+                <Pressable onPress={() => onAbrirArticulo(p.articulo)}>
+                  <Text style={styles.enlace}>Leer más →</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        }
+        const fuego = new Date(t.fecha);
+        const desde = new Date(t.fecha - (p.maxHoras ?? 0) * 3600000);
+        const vencido = t.fecha - Date.now() <= 5 * 60000;
+        return (
+          <View key={p.id} style={styles.compra}>
+            <Text style={styles.compraTitulo}>{p.nombre} · desde las {horaCorta(desde)}</Text>
+            <Text style={styles.compraTexto}>
+              {vencido ? 'Ya pasa de lo bueno: cámbialo cuando puedas.' : `Te aviso a las ${horaCorta(fuego)}.`}
+            </Text>
+            <View style={styles.productoFila}>
+              <Pressable onPress={() => onRenovarCambio(p)}>
+                <Text style={styles.enlace}>Lo acabo de cambiar</Text>
+              </Pressable>
+              <Pressable onPress={() => onCorregirPuesta(p)}>
+                <Text style={styles.enlace}>Cambiar hora</Text>
+              </Pressable>
+              <Pressable onPress={() => onQuitarCambio(p.id)}>
+                <Text style={styles.enlace}>Quitar</Text>
+              </Pressable>
+              <Pressable onPress={() => onAbrirArticulo(p.articulo)}>
+                <Text style={styles.enlace}>Leer más →</Text>
+              </Pressable>
+            </View>
+          </View>
+        );
+      })}
+      {Platform.OS === 'web' && (
+        <Text style={styles.aclaracion}>En el móvil esto avisa solo del cambio.</Text>
+      )}
 
       <Text style={styles.etiqueta}><Text style={styles.etiquetaNum}>05 / </Text>Algo que contar</Text>
       <TextInput

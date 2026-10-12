@@ -42,3 +42,6 @@ AGENTS.md
 # generated native folders
 /ios
 /android
+
+# respuestas del forms con emails (privadas, nunca se publican)
+*.csv.zip
