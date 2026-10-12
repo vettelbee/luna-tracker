@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "description": "Tu ciclo en tu bolsillo. Gratis, sin cuentas, tus datos no salen del movil.",
+    "description": "Tu ciclo en tu bolsillo. Gratis, sin cuentas, tus datos no salen del móvil.",
     "plugins": [
       "expo-notifications"
     ],

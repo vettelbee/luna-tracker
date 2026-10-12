@@ -1474,7 +1474,8 @@ function PantallaTuyo({ avisoPuesto, onAviso, pastilla, onPastilla, largo, onLar
 
       <Text style={styles.etiqueta}>Tus datos</Text>
       <Text style={styles.aclaracion}>
-        Tienes {cuantos} {cuantos === 1 ? 'ciclo anotado' : 'ciclos anotados'}, guardados en este móvil.
+        Tienes {cuantos} {cuantos === 1 ? 'ciclo anotado' : 'ciclos anotados'}, guardados solo en este móvil.
+        No salen a ningún servidor, no se venden ni se comparten, y aquí no hay IA: lo ves tú y quien tú decidas.
         Si borras la app se pierde todo. Eso es lo bueno y lo malo de no usar nube.
       </Text>
 
@@ -1482,7 +1483,7 @@ function PantallaTuyo({ avisoPuesto, onAviso, pastilla, onPastilla, largo, onLar
         <Text style={styles.interruptorTexto}>Pasarme mi historial</Text>
         <Text style={styles.filaArticuloMin}>→</Text>
       </Pressable>
-      <Text style={styles.aclaracion}>En texto llano: para tu médica o para no perderlo al cambiar de móvil.</Text>
+      <Text style={styles.aclaracion}>En texto llano: para llevar a consulta o para no perderlo al cambiar de móvil.</Text>
 
       <Pressable onPress={onInforme} style={({ pressed }) => [styles.interruptor, pressed && styles.apretado]}>
         <Text style={styles.interruptorTexto}>Informe para consulta (PDF)</Text>

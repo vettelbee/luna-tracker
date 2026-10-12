@@ -69,7 +69,7 @@ li { margin-bottom: 6px; }
 .firma { margin-top: 24px; font-style: italic; color: #857768; }
 </style></head><body>
 <h1>Mi informe de Luna</h1>
-<p class="sub">Generado el ${esc(d.generada)} · desde mi móvil, sin cuentas ni nube.</p>
+<p class="sub">Generado el ${esc(d.generada)} · desde mi móvil, sin cuentas, sin nube ni IA.</p>
 <h2>Ciclos</h2>
 <p>${d.inicios.length} ciclos anotados · media de ${d.cicloMedio} días${
     min !== null && max !== null ? ` (de ${min} a ${max})` : ''
@@ -82,7 +82,7 @@ ${patrones}
 <h2>Productos</h2>
 <p>${d.topProductos.length ? esc(d.topProductos.map(([n, c]) => `${n} (${c})`).join(', ')) : '—'}</p>
 ${d.anticonceptivo ? `<h2>Anticonceptivo</h2><p>${esc(d.anticonceptivo)}</p>` : ''}
-<p class="aviso">Informe orientativo generado por la usuaria con sus propios registros. No sustituye historia clínica, exploración ni diagnóstico.</p>
+<p class="aviso">Informe orientativo generado por ti con tus propios registros. No sustituye historia clínica, exploración ni diagnóstico.</p>
 <p class="firma">Hecho a mano por Gianna ✦</p>
 </body></html>`;
 }

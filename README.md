@@ -9,7 +9,8 @@ cómo estás, y te hace la cuenta para el mes siguiente. Ya está. No hay
 nube, no hay cuenta, no hay consejos raros generados por un robot.
 
 Todo lo que escribes se queda en tu teléfono. Si borras la app, se pierde.
-Eso es a posta.
+Eso es a posta. No se vende ni se comparte nada, no hay rastreo ni IA:
+no hay a quién venderlo porque no sale del móvil.
 
 Es para quien tenga ciclo, sea quien sea: mujeres, hombres trans,
 personas no binarias. Si tienes regla, es para ti.
