@@ -1916,15 +1916,20 @@ function crearEstilos(c: Paleta) {
   anyo: { fontSize: 12, color: c.tenue, letterSpacing: 3, textTransform: 'uppercase', marginTop: -2 },
   flecha: { fontSize: 26, color: c.tinta, padding: 8 },
   semana: { flexDirection: 'row', marginTop: 16, borderBottomWidth: 1, borderBottomColor: c.tinta, paddingBottom: 7 },
-  diaSemana: { flex: 1, textAlign: 'center', fontSize: 11.5, fontWeight: '700', color: c.tenue, textTransform: 'uppercase', letterSpacing: 1 },
+  // la letra de arriba usa el mismo ancho que la celda de abajo:
+  // antes iba con flex 1 y la rejilla con 14.28 %, y con el redondeo
+  // cada columna caía un pelín corrida respecto a su número.
+  diaSemana: { width: '14.2857%', textAlign: 'center', fontSize: 11.5, fontWeight: '700', color: c.tenue, textTransform: 'uppercase', letterSpacing: 1 },
   rejilla: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
-  celda: { width: '14.28%', aspectRatio: 0.95, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  celda: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   celdaRegla: { backgroundColor: c.rojo },
   celdaManchado: { borderWidth: 1.5, borderColor: c.rojo },
   celdaFertil: { backgroundColor: `${c.oliva}2E` },
   celdaCuenta: { borderWidth: 1.5, borderColor: c.rojo, borderStyle: 'dashed' },
   celdaHoy: { borderWidth: 1, borderColor: c.tinta },
-  numero: { fontSize: 16, color: c.tinta, fontVariant: ['tabular-nums'] },
+  // en Android el texto trae un colchón de fuente que lo baja un poco:
+  // sin eso el número se veía caído dentro de la celda.
+  numero: { fontSize: 16, lineHeight: 22, color: c.tinta, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false, fontVariant: ['tabular-nums'] },
   numeroRegla: { color: '#fff', fontWeight: '700' },
   numeroCuenta: { color: c.rojo, fontWeight: '700' },
   puntoFertil: { width: 4, height: 4, borderRadius: 2, backgroundColor: c.oliva, marginTop: 2 },
