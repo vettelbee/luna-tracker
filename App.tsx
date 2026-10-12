@@ -71,10 +71,13 @@ const CLAVE_TEMA = '@luna:tema';
 
 // Palabras tal cual las diría yo. Están también los síntomas
 // raros a posta: si lo notas y está en la lista, ya sabes que no eres la única.
+// Febrícula, Diarrea, Calambres y Dolor muscular salieron del forms de octubre:
+// la diarrea la mencionaron dos veces y el dolor de huesos una, así que van tal cual.
 const FLUJOS = ['Manchado', 'Poco', 'Normal', 'Mucho'];
 const SINTOMAS = [
-  'Cólico', 'Dolor de cabeza', 'Migraña', 'Acné', 'Hinchazón', 'Pecho sensible',
-  'Lumbago', 'Cansancio', 'Antojos', 'Tripa revuelta', 'Náuseas', 'Mareos',
+  'Cólico', 'Calambres', 'Dolor de cabeza', 'Migraña', 'Acné', 'Hinchazón',
+  'Pecho sensible', 'Lumbago', 'Dolor muscular', 'Cansancio', 'Antojos',
+  'Tripa revuelta', 'Diarrea', 'Náuseas', 'Mareos', 'Febrícula',
   'Manchado', 'Pinchazo al ovular', 'Sin dormir', 'Sueños raros',
   'Niebla mental', 'Más ganas', 'Sin ganas',
 ];

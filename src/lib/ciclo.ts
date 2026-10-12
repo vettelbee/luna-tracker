@@ -155,7 +155,11 @@ export const FASES: Record<Fase, InfoFase> = {
       'Migraña justo antes o durante',
       'Tripa revuelta o diarrea',
       'Náuseas o mareos',
-      'Dolor muscular',
+      // del forms de octubre: diarrea dos veces, dolor de huesos una,
+      // calambres una y febrícula (la mía de siempre). van con su nombre.
+      'Dolor muscular o de huesos',
+      'Calambres en piernas o cuerpo',
+      'Febrícula con la regla',
       'Notar más el dolor en general',
     ],
     cuidados: [
